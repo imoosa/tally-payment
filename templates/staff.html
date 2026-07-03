@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Manage Staff – Maktronic Debtors{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+    <div>
+      <div class="topbar-title">Manage Staff</div>
+      <div class="topbar-sub">User accounts and access control</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-primary" onclick="openAddUserModal()">＋ Add User</button>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <div class="card" style="margin-bottom:20px">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:16px">👥 Staff Accounts</div>
+    <div style="display:flex;flex-direction:column;gap:0">
+
+      <!-- Admin row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0">A</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0">admin</div>
+            <div style="font-size:11px;color:#64748b">Administrator · Full Access</div>
+          </div>
+        </div>
+        <span style="background:rgba(16,185,129,0.15);color:#10b981;border-radius:10px;padding:3px 12px;font-size:11px;font-weight:600">Admin</span>
+      </div>
+
+      <!-- Manager row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0">M</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0">manager</div>
+            <div style="font-size:11px;color:#64748b">Manager · Standard Access</div>
+          </div>
+        </div>
+        <span style="background:rgba(245,158,11,0.15);color:#f59e0b;border-radius:10px;padding:3px 12px;font-size:11px;font-weight:600">Manager</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Change Password -->
+  <div class="card">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:16px">🔑 Change Password</div>
+    <div style="max-width:400px">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="cpUsername" placeholder="Enter username">
+      </div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="cpPassword" placeholder="New password (min 8 chars)">
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="cpConfirm" placeholder="Confirm new password">
+      </div>
+      <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal">
+    <h3>＋ Add Staff User</h3>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="newUsername" placeholder="e.g. staff1">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="newPassword" placeholder="Min 8 characters">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAddUserModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addUser()">Add User</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openAddUserModal() { document.getElementById('addUserModal').classList.add('open'); }
+function closeAddUserModal() { document.getElementById('addUserModal').classList.remove('open'); }
+
+function changePassword() {
+  const u = document.getElementById('cpUsername').value.trim();
+  const p = document.getElementById('cpPassword').value;
+  const c = document.getElementById('cpConfirm').value;
+  if (!u || !p) { showToast('Fill in all fields', 'error'); return; }
+  if (p !== c) { showToast('Passwords do not match', 'error'); return; }
+  if (p.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+  showToast('Password change requires backend implementation', 'info');
+}
+
+function addUser() {
+  const u = document.getElementById('newUsername').value.trim();
+  const p = document.getElementById('newPassword').value;
+  if (!u || !p) { showToast('Fill in all fields', 'error'); return; }
+  showToast('User management requires backend implementation', 'info');
+  closeAddUserModal();
+}
+
+document.getElementById('addUserModal').addEventListener('click', function(e){
+  if (e.target === this) closeAddUserModal();
+});
+</script>
+{% endblock %}

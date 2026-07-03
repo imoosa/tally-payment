@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Activity Log – Maktronic Debtors{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+    <div>
+      <div class="topbar-title">Activity Log</div>
+      <div class="topbar-sub">Recent system actions</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline" onclick="location.reload()">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="page-content">
+  <div class="card">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:16px">📋 Recent Activity</div>
+
+    <!-- Placeholder log entries -->
+    <div id="logList" style="display:flex;flex-direction:column;gap:0">
+
+      <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔑</div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:#e2e8f0;font-weight:600">User Login</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:2px"><strong style="color:#cbd5e1">{{ user }}</strong> logged in</div>
+          <div style="font-size:10px;color:#64748b;margin-top:4px">Just now</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📊</div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:#e2e8f0;font-weight:600">Dashboard Viewed</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:2px">Main dashboard accessed</div>
+          <div style="font-size:10px;color:#64748b;margin-top:4px">Session start</div>
+        </div>
+      </div>
+
+      <div style="padding:40px;text-align:center;color:#64748b">
+        <div style="font-size:28px;margin-bottom:10px">📝</div>
+        <div style="font-size:14px">Full activity logging</div>
+        <div style="font-size:12px;margin-top:4px">Detailed logs will appear here once backend logging is enabled</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Data Management – Maktronic Debtors{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+    <div>
+      <div class="topbar-title">Data Management</div>
+      <div class="topbar-sub">Upload or sync debtor data</div>
+    </div>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <!-- Upload Excel -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">📂 Upload Excel File</div>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:18px">Upload a Sundry Debtors Excel (.xlsx / .xls) file to update the debtor list.</div>
+
+    <div id="dropZone"
+      style="border:2px dashed rgba(59,130,246,0.35);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(59,130,246,0.04)"
+      onclick="document.getElementById('fileInput').click()"
+      ondragover="event.preventDefault();this.style.borderColor='#3b82f6'"
+      ondragleave="this.style.borderColor='rgba(59,130,246,0.35)'"
+      ondrop="handleDrop(event)">
+      <div style="font-size:36px;margin-bottom:10px">📊</div>
+      <div style="font-size:14px;color:#e2e8f0;font-weight:600">Drop Excel file here or click to browse</div>
+      <div style="font-size:12px;color:#64748b;margin-top:6px">Supports .xlsx and .xls files</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)">
+    </div>
+
+    <div id="uploadStatus" style="margin-top:14px;display:none"></div>
+
+    <div id="uploadProgress" style="margin-top:14px;display:none">
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">Uploading…</div>
+      <div style="background:rgba(255,255,255,0.06);border-radius:6px;height:6px;overflow:hidden">
+        <div id="progressBar" style="height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);border-radius:6px;width:0%;transition:width 0.3s"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Sheets Sync -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">
+      🔗 Google Sheets Sync
+      {% if gsheet_connected %}
+        <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;border-radius:10px;padding:2px 10px;margin-left:8px;font-weight:600">● Connected</span>
+      {% else %}
+        <span style="font-size:11px;background:rgba(100,116,139,0.15);color:#94a3b8;border-radius:10px;padding:2px 10px;margin-left:8px;font-weight:600">○ Not connected</span>
+      {% endif %}
+    </div>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:18px">
+      Paste a public Google Sheets CSV export URL to auto-sync data.
+      {% if last_sync_time %}
+        <span style="color:#10b981"> · Last synced: {{ last_sync_time }}</span>
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input type="url" id="gsheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv"
+        style="flex:1;min-width:220px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:#e2e8f0;padding:10px 14px;font-size:13px;outline:none"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='var(--border)'">
+      <button class="btn btn-primary" onclick="syncGSheet()">🔄 Sync Now</button>
+      <button class="btn btn-outline" onclick="refreshData()">↻ Refresh</button>
+    </div>
+    <div id="syncStatus" style="margin-top:12px;font-size:13px;display:none"></div>
+  </div>
+
+  <!-- Saved Files -->
+  <div class="card">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:14px">📁 Uploaded Files</div>
+    {% if files %}
+    <div style="display:flex;flex-direction:column;gap:0">
+      {% for f in files %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <span style="font-size:22px;flex-shrink:0">📊</span>
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.name }}</div>
+            <div style="font-size:11px;color:#64748b">{{ f.modified }} · {{ (f.size / 1024)|round(1) }} KB</div>
+          </div>
+        </div>
+        <button onclick="loadFile('{{ f.name }}')" class="btn btn-outline" style="flex-shrink:0">Load</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:32px;color:#64748b">
+      <div style="font-size:32px;margin-bottom:10px">📂</div>
+      <div style="font-size:14px">No files uploaded yet</div>
+      <div style="font-size:12px;margin-top:4px">Upload an Excel file above to get started</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').style.borderColor = 'rgba(59,130,246,0.35)';
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (file) uploadFile(file);
+}
+
+async function uploadFile(file) {
+  if (!file.name.match(/\.(xlsx|xls)$/i)) {
+    showStatus('uploadStatus', '❌ Please upload an Excel file (.xlsx or .xls)', 'error');
+    return;
+  }
+
+  const progress = document.getElementById('uploadProgress');
+  const bar = document.getElementById('progressBar');
+  progress.style.display = 'block';
+
+  // Simulate progress
+  let p = 0;
+  const iv = setInterval(() => { p = Math.min(p + 10, 85); bar.style.width = p + '%'; }, 200);
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const resp = await fetch('/api/upload-excel', { method: 'POST', body: formData });
+    const data = await resp.json();
+    clearInterval(iv);
+    bar.style.width = '100%';
+    setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 600);
+
+    if (data.success) {
+      showStatus('uploadStatus', `✅ Loaded ${data.parties_count} parties successfully!`, 'success');
+      setTimeout(() => location.reload(), 1800);
+    } else {
+      showStatus('uploadStatus', '❌ ' + (data.error || 'Upload failed'), 'error');
+    }
+  } catch (err) {
+    clearInterval(iv);
+    progress.style.display = 'none';
+    showStatus('uploadStatus', '❌ Network error: ' + err.message, 'error');
+  }
+}
+
+async function syncGSheet() {
+  const url = document.getElementById('gsheetUrl').value.trim();
+  if (!url) { showStatus('syncStatus', '❌ Please enter a Google Sheets URL', 'error'); return; }
+
+  showStatus('syncStatus', '⏳ Syncing…', 'info');
+  try {
+    const resp = await fetch('/api/sync-gsheet', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ url })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showStatus('syncStatus', `✅ Synced ${data.parties_count} parties!`, 'success');
+    } else {
+      showStatus('syncStatus', '❌ ' + (data.error || 'Sync failed'), 'error');
+    }
+  } catch (err) {
+    showStatus('syncStatus', '❌ Network error: ' + err.message, 'error');
+  }
+}
+
+async function refreshData() {
+  showStatus('syncStatus', '⏳ Refreshing…', 'info');
+  try {
+    const resp = await fetch('/api/refresh-data', { method: 'POST' });
+    const data = await resp.json();
+    if (data.success) {
+      showStatus('syncStatus', `✅ ${data.message || 'Data refreshed'}`, 'success');
+    } else {
+      showStatus('syncStatus', '⚠️ ' + (data.message || data.error || 'No changes'), 'info');
+    }
+  } catch (err) {
+    showStatus('syncStatus', '❌ Error: ' + err.message, 'error');
+  }
+}
+
+async function loadFile(filename) {
+  showToast('Loading ' + filename + '…', 'info');
+  try {
+    const resp = await fetch('/api/load-file', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ filename })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showToast(`Loaded ${data.parties_count} parties!`, 'success');
+      setTimeout(() => window.location.href = '/', 1500);
+    } else {
+      showToast(data.error || 'Failed to load file', 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  const colors = { success: '#10b981', error: '#ef4444', info: '#60a5fa' };
+  el.style.color = colors[type] || '#e2e8f0';
+  el.textContent = msg;
+}
+</script>
+{% endblock %}

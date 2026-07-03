@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}{{ party.name }} – Maktronic Debtors{% endblock %}
+
+{% block content %}
+{% set bucket_colors = {'lt30':'#10b981','30_60':'#60a5fa','60_90':'#a78bfa','90_120':'#fcd34d','120_180':'#fb923c','gt180':'#f87171'} %}
+
+<style>
+.phone-list {
+  margin-top: 5px;
+}
+.phone-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.phone-item:last-child {
+  border-bottom: none;
+}
+.phone-number {
+  font-size: 13px;
+  font-weight: 500;
+}
+.phone-label {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(37,211,102,0.2);
+  color: #25D366;
+}
+.landline-label {
+  background: rgba(156,163,175,0.2);
+  color: #9ca3af;
+}
+.whatsapp-btn-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #25D366;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  text-decoration: none;
+  margin-left: auto;
+}
+.whatsapp-btn-small:hover {
+  background: #1ebe5d;
+}
+</style>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+    <a href="javascript:history.back()" style="color:var(--muted);text-decoration:none;font-size:22px;line-height:1;flex-shrink:0">‹</a>
+    <div style="min-width:0">
+      <div class="topbar-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ party.name }}</div>
+      <div class="topbar-sub">{% if party.location %}📍 {{ party.location }}{% endif %}</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-danger" onclick="sendReminder()">📧 Remind</button>
+    <button class="btn btn-delete" onclick="confirmDeleteParty()" style="background: rgba(239,68,68,0.15); color: #ef4444;">
+    🗑️ Delete Party
+  </button>
+  </div>
+</div>
+
+<div class="page-content">
+  <!-- Top grid: contact + total outstanding -->
+  <div class="detail-top-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+
+    <!-- Contact Info -->
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:14px">👤 Contact Details</div>
+      <table style="width:100%;border-collapse:collapse">
+        {% if party.contact_person %}
+        <tr>
+          <td style="padding:7px 0;font-size:11px;color:var(--muted);width:40%">Contact Person</td>
+          <td style="padding:7px 0;font-size:13px;color:var(--text);font-weight:500">{{ party.contact_person }}</td>
+        </tr>
+        {% endif %}
+        {% if party.location %}
+        <tr>
+          <td style="padding:7px 0;font-size:11px;color:var(--muted)">Location</td>
+          <td style="padding:7px 0;font-size:13px;color:var(--text)">{{ party.location }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td style="padding:7px 0;font-size:11px;color:var(--muted)">Last Updated</td>
+          <td style="padding:7px 0;font-size:12px;color:var(--muted)">{{ party.last_updated }}</td>
+        </tr>
+      </table>
+
+      <!-- Phone Numbers: Two-column grid -->
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+        <!-- Mobile Numbers Column -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#25D366;margin-bottom:10px;display:flex;align-items:center;gap:5px">
+            📱 Mobile
+            {% if party.mobile_numbers and party.mobile_numbers|length > 0 %}
+              <span style="background:rgba(37,211,102,0.15);color:#25D366;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600">{{ party.mobile_numbers|length }}</span>
+            {% endif %}
+          </div>
+          {% if party.mobile_numbers and party.mobile_numbers|length > 0 %}
+            <div class="phone-list">
+              {% for mobile in party.mobile_numbers %}
+              {% set clean_mob = mobile | replace(' ', '') | replace('-', '') | replace('+91', '') | replace('+', '') %}
+              <div class="phone-item" style="flex-direction:column;align-items:flex-start;gap:5px">
+                <span class="phone-number" style="font-size:13px">{{ mobile }}</span>
+                <div style="display:flex;gap:5px">
+                  <a href="tel:{{ mobile }}" class="whatsapp-btn-small" style="background:#374151">📞 Call</a>
+                  <a href="https://wa.me/91{{ clean_mob[-10:] }}" target="_blank" class="whatsapp-btn-small">💬 WA</a>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="font-size:11px;color:var(--muted);padding:8px 0">— None —</div>
+          {% endif %}
+        </div>
+
+        <!-- Landline Numbers Column -->
+        <div style="border-left:1px solid var(--border);padding-left:12px">
+          <div style="font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:10px;display:flex;align-items:center;gap:5px">
+            ☎️ Landline
+            {% if party.landline_numbers and party.landline_numbers|length > 0 %}
+              <span style="background:rgba(156,163,175,0.15);color:#9ca3af;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600">{{ party.landline_numbers|length }}</span>
+            {% endif %}
+          </div>
+          {% if party.landline_numbers and party.landline_numbers|length > 0 %}
+            <div class="phone-list">
+              {% for landline in party.landline_numbers %}
+              <div class="phone-item" style="flex-direction:column;align-items:flex-start;gap:5px">
+                <span class="phone-number" style="font-size:13px;color:#9ca3af">{{ landline }}</span>
+                <div style="display:flex;gap:5px">
+                  <a href="tel:{{ landline }}" class="whatsapp-btn-small" style="background:#374151">📞 Call</a>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="font-size:11px;color:var(--muted);padding:8px 0">— None —</div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Total Outstanding -->
+    <div class="card" style="background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02));border-color:rgba(239,68,68,0.2)">
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px">💰 Outstanding</div>
+      <div style="font-size:28px;font-weight:800;color:#ef4444;margin-bottom:6px;line-height:1.1">
+        ₹ {{ '{:,.2f}'.format(party.total_pending) }}
+      </div>
+      <div style="font-size:12px;color:var(--muted)">{{ party.buckets|length }} bucket(s)</div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Aging Split</div>
+        {% for bkey, bamt in party.buckets.items() %}
+        {% set pct = (bamt / party.total_pending * 100)|round(1) %}
+        <div style="margin-bottom:7px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+            <span style="color:{{ bucket_colors.get(bkey,'#60a5fa') }}">{{ bucket_map.get(bkey, bkey) }}</span>
+            <span style="color:var(--muted)">{{ pct }}%</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:3px;height:4px">
+            <div style="width:{{ pct }}%;height:100%;background:{{ bucket_colors.get(bkey,'#60a5fa') }};border-radius:3px"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Bucket Breakdown -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:14px">📅 Bucket-wise Breakdown</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+      {% for b in buckets %}
+      {% if b.key in party.buckets %}
+      {% set amt = party.buckets[b.key] %}
+      {% set color = bucket_colors.get(b.key, '#60a5fa') %}
+      <div style="background:rgba(255,255,255,0.03);border:1px solid {{ color }}33;border-radius:10px;padding:14px;border-top:2px solid {{ color }}">
+        <div style="font-size:10px;color:{{ color }};font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+          {{ b.label }}
+        </div>
+        <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:3px">
+          ₹ {{ '{:,.2f}'.format(amt) }}
+        </div>
+        <div style="font-size:10px;color:var(--muted)">
+          {{ ((amt / party.total_pending) * 100)|round(1) }}% of total
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Reminder Panel -->
+  <div class="card">
+    <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:14px">📧 Payment Reminder</div>
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Preview Message</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.7" id="reminderPreview">
+        Dear <strong>{{ party.contact_person or party.name }}</strong>,<br><br>
+        This is a gentle reminder regarding your outstanding payment with Maktronic Medical LLP.<br><br>
+        <strong>Total Pending: ₹ {{ '{:,.2f}'.format(party.total_pending) }}</strong><br>
+        {% for bkey, bamt in party.buckets.items() %}
+        • {{ bucket_map.get(bkey, bkey) }}: ₹ {{ '{:,.2f}'.format(bamt) }}<br>
+        {% endfor %}
+        <br>
+        Please arrange for the payment at the earliest. For queries contact us at 022-23732271.<br><br>
+        Regards,<br>Maktronic Medical LLP
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="sendReminder()">📧 Send Email</button>
+      <button class="btn btn-outline" onclick="copyReminder()">📋 Copy</button>
+      {# Use first mobile number only for WhatsApp — landlines are excluded #}
+      {% set primary_mobile = party.mobile_numbers[0] if (party.mobile_numbers and party.mobile_numbers|length > 0) else '' %}
+      {% if primary_mobile %}
+        {% set clean_phone = primary_mobile | replace(' ', '') | replace('-', '') | replace('+91', '') | replace('+', '') %}
+        {% set wa_phone = '91' + clean_phone[-10:] %}
+        <a href="https://wa.me/{{ wa_phone }}?text={{ 'Dear ' + (party.contact_person or party.name) + ',%0A%0AThis is a gentle reminder regarding your outstanding payment of ₹' + '{:,.2f}'.format(party.total_pending) + ' with Maktronic Medical LLP.%0A%0APlease arrange for the payment at the earliest.' | urlencode }}"
+           target="_blank"
+           class="btn btn-outline" style="text-decoration:none;background:#25D366;color:#fff;border-color:#25D366"
+           title="Sending to: {{ primary_mobile }}">
+          💬 WhatsApp ({{ primary_mobile }})
+        </a>
+      {% else %}
+        <button class="btn btn-outline" disabled style="opacity:0.5;cursor:not-allowed">💬 No Mobile</button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+@media (max-width: 600px) {
+  .detail-top-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+
+<script>
+function sendReminder() {
+  fetch('/api/send-reminder', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({party_name: '{{ party.name }}'})
+  }).then(r => r.json()).then(d => showToast(d.message, 'success'));
+}
+
+function copyReminder() {
+  const text = document.getElementById('reminderPreview').innerText;
+  navigator.clipboard.writeText(text).then(() => showToast('Message copied!', 'success'));
+}
+
+function confirmDeleteParty() {
+  const partyName = '{{ party.name }}';
+  const totalAmount = {{ party.total_pending }};
+  
+  const modalHtml = `
+    <div class="modal-overlay" id="deleteConfirmModal">
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 400px; width: 90%;">
+        <h3 style="color: #ef4444; margin-bottom: 12px;">⚠️ Delete Party</h3>
+        <p>Are you sure you want to delete <strong>${escapeHtml(partyName)}</strong>?</p>
+        <p style="font-size: 12px; color: #ef4444; margin: 8px 0;">Total amount: ₹${totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
+        <p style="font-size: 12px; margin-top: 12px;">This action cannot be undone.</p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+          <button class="btn" style="background: #dc2626; color: white;" onclick="deleteParty()">Delete Forever</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const existingModal = document.getElementById('deleteConfirmModal');
+  if (existingModal) existingModal.remove();
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  document.getElementById('deleteConfirmModal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  const modal = document.getElementById('deleteConfirmModal');
+  if (modal) modal.remove();
+}
+
+async function deleteParty() {
+  closeDeleteModal();
+  showToast('Deleting party...', 'info');
+  
+  try {
+    const response = await fetch(`/api/delete-party/${encodeURIComponent('{{ party.name }}')}`, {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showToast(result.message, 'success');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    } else {
+      showToast(result.error || 'Deletion failed', 'error');
+    }
+  } catch (error) {
+    showToast('Network error: ' + error.message, 'error');
+  }
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+
+{% endblock %}

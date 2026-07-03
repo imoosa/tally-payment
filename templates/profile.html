@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Profile Settings – Maktronic Debtors{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+    <div>
+      <div class="topbar-title">Profile Settings</div>
+      <div class="topbar-sub">Manage your account</div>
+    </div>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <!-- Profile Card -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+      <div style="width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;flex-shrink:0">
+        {{ user[0].upper() }}
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700;color:#fff">{{ user }}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:3px">
+          {% if user == 'admin' %}Administrator · Full Access{% else %}Manager · Standard Access{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:14px">🔑 Change Password</div>
+    <div style="max-width:380px;display:flex;flex-direction:column;gap:0">
+      <div class="form-group">
+        <label>Current Password</label>
+        <input type="password" id="currentPwd" placeholder="Enter current password">
+      </div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="newPwd" placeholder="Min 8 characters">
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <input type="password" id="confirmPwd" placeholder="Re-enter new password">
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="updatePassword()">💾 Update Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Settings -->
+  <div class="card">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:16px">⚙️ App Settings</div>
+
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;color:#e2e8f0;font-weight:600">Company Name</div>
+          <div style="font-size:11px;color:#64748b">Shown in reminders and messages</div>
+        </div>
+        <input type="text" value="Maktronic Medical LLP" id="companyName"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;width:180px;text-align:right"
+          onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;color:#e2e8f0;font-weight:600">Contact Phone</div>
+          <div style="font-size:11px;color:#64748b">Shown at bottom of reminder messages</div>
+        </div>
+        <input type="text" value="022-23732271" id="contactPhone"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;width:140px;text-align:right"
+          onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+
+      <div style="padding:14px 0;display:flex;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="card" style="margin-top:20px;border-color:rgba(239,68,68,0.2)">
+    <div style="font-size:14px;font-weight:700;color:#ef4444;margin-bottom:14px">⚠️ Danger Zone</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-size:13px;color:#e2e8f0;font-weight:600">Clear All Data</div>
+        <div style="font-size:11px;color:#64748b">Permanently delete all debtor records</div>
+      </div>
+      <button class="btn btn-danger" onclick="confirmClearData()">🗑️ Clear All Data</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function updatePassword() {
+  const curr = document.getElementById('currentPwd').value;
+  const np   = document.getElementById('newPwd').value;
+  const cp   = document.getElementById('confirmPwd').value;
+  if (!curr || !np) { showToast('Fill in all fields', 'error'); return; }
+  if (np !== cp) { showToast('Passwords do not match', 'error'); return; }
+  if (np.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+  showToast('Password update requires backend implementation', 'info');
+}
+
+function saveSettings() {
+  showToast('Settings saved (UI only – backend persistence requires implementation)', 'info');
+}
+
+function confirmClearData() {
+  if (confirm('⚠️ This will permanently delete ALL debtor records. This cannot be undone. Are you sure?')) {
+    fetch('/api/clear-data', { method: 'POST' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) { showToast('All data cleared', 'success'); setTimeout(() => location.href='/', 1500); }
+        else showToast(d.error || 'Failed to clear data', 'error');
+      })
+      .catch(e => showToast('Error: ' + e.message, 'error'));
+  }
+}
+</script>
+{% endblock %}

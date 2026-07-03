@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}All Parties – Maktronic Debtors{% endblock %}
+
+{% block content %}
+<style>
+.parties-table th {
+  padding: 10px 12px; text-align: left;
+  font-size: 11px; color: #94a3b8; font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.parties-table td {
+  padding: 11px 12px; font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.parties-table tr:last-child td { border-bottom: none; }
+.parties-table tr:hover td { background: rgba(255,255,255,0.02); }
+.party-link { color: #e2e8f0; text-decoration: none; font-weight: 600; }
+.party-link:hover { color: var(--accent); }
+.bucket-chip {
+  display: inline-block; font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 10px; margin: 1px;
+}
+@media (max-width: 700px) {
+  .col-hide { display: none; }
+}
+</style>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+    <div>
+      <div class="topbar-title">All Parties</div>
+      <div class="topbar-sub">{{ parties|length }} parties total</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <input type="text" id="searchInput" placeholder="Search party…"
+      oninput="filterTable(this.value)"
+      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:13px;outline:none;width:180px">
+  </div>
+</div>
+
+<div class="page-content">
+  <!-- Summary stats -->
+  <div class="stat-grid" style="margin-bottom:20px">
+    <div class="stat-card blue">
+      <div class="stat-label">Total Parties</div>
+      <div class="stat-value accent">{{ parties|length }}</div>
+      <div class="stat-sub">All debtors</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Total Outstanding</div>
+      <div class="stat-value danger" style="font-size:18px">
+        ₹ {{ '{:,.0f}'.format(parties|sum(attribute='total_pending')) }}
+      </div>
+      <div class="stat-sub">Across all parties</div>
+    </div>
+    <div class="stat-card gold" style="grid-column:span 2">
+      <div class="stat-label">With Mobile Numbers</div>
+      <div class="stat-value warn">
+        {{ parties|selectattr('mobile_numbers')|list|length }}
+      </div>
+      <div class="stat-sub">WhatsApp reachable</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:14px;font-weight:700;color:#fff">📋 Party Directory</span>
+      <span id="tableCount" style="font-size:12px;color:#94a3b8">{{ parties|length }} parties</span>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table class="parties-table" style="width:100%;border-collapse:collapse;min-width:600px" id="partiesTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Party Name</th>
+            <th class="col-hide">Location</th>
+            <th class="col-hide">Contact</th>
+            <th>Mobile</th>
+            <th style="text-align:right">Total Pending</th>
+            <th style="text-align:center">Buckets</th>
+          </tr>
+        </thead>
+        <tbody id="partiesTbody">
+          {% for p in parties|sort(attribute='total_pending', reverse=True) %}
+          {% set mobile_numbers = p.get('mobile_numbers', []) %}
+          {% set phone = p.get('phone', '') %}
+          <tr data-name="{{ p.name|lower }}" data-loc="{{ (p.location or '')|lower }}">
+            <td style="color:#64748b;font-size:12px">{{ loop.index }}</td>
+            <td>
+              <a href="/party/{{ p.name | urlencode }}" class="party-link">{{ p.name }}</a>
+            </td>
+            <td class="col-hide" style="color:#94a3b8">{{ p.location or '—' }}</td>
+            <td class="col-hide" style="color:#94a3b8">{{ p.contact_person or '—' }}</td>
+            <td>
+              {% if mobile_numbers %}
+                <a href="tel:{{ mobile_numbers[0] }}" style="color:#25D366;text-decoration:none;font-size:12px">📱 {{ mobile_numbers[0] }}</a>
+                {% if mobile_numbers|length > 1 %}
+                  <span style="font-size:10px;color:#64748b"> +{{ mobile_numbers|length - 1 }}</span>
+                {% endif %}
+              {% elif phone %}
+                <span style="font-size:12px;color:#94a3b8">{{ phone }}</span>
+              {% else %}
+                <span style="color:#64748b;font-size:11px">—</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right;font-weight:700;color:#ef4444">
+              ₹ {{ '{:,.2f}'.format(p.total_pending) }}
+            </td>
+            <td style="text-align:center">
+              {% set bucket_colors_map = {'lt30':'#10b981','30_60':'#60a5fa','60_90':'#a78bfa','90_120':'#fcd34d','120_180':'#fb923c','gt180':'#f87171'} %}
+              {% for bkey in p.buckets %}
+                <span class="bucket-chip" style="background:{{ bucket_colors_map.get(bkey,'#60a5fa') }}22;color:{{ bucket_colors_map.get(bkey,'#60a5fa') }}">
+                  {{ bkey }}
+                </span>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div id="noResults" style="display:none;padding:40px;text-align:center;color:#64748b;font-size:14px">
+      No parties match your search.
+    </div>
+  </div>
+</div>
+
+<script>
+function filterTable(q) {
+  const term = q.toLowerCase().trim();
+  const rows = document.querySelectorAll('#partiesTbody tr');
+  let visible = 0;
+  rows.forEach(row => {
+    const name = row.dataset.name || '';
+    const loc  = row.dataset.loc  || '';
+    const match = !term || name.includes(term) || loc.includes(term);
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('tableCount').textContent = visible + ' parties';
+  document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+}
+</script>
+{% endblock %}
